@@ -1,0 +1,576 @@
+theory Practical
+imports Main
+begin
+
+section \<open>Part 1\<close>
+
+(* 1 mark *)
+lemma disjunction_idempotence:
+  "A \<or> A \<longleftrightarrow> A"
+  apply(rule iffI)
+  apply(erule disjE)
+  apply assumption+
+  apply(rule disjI1)
+  apply assumption
+  done
+
+(* 1 mark *)
+lemma conjunction_idempotence:
+  "A \<and> A \<longleftrightarrow> A"
+  apply(rule iffI)
+  apply(erule conjE)
+  apply assumption
+  apply (rule conjI)
+  apply assumption+
+  done
+
+(* 1 mark *)
+lemma disjunction_to_conditional:
+  "(\<not> P \<or> R) \<longrightarrow> (P \<longrightarrow> R)"
+  apply (rule impI)+
+  apply (erule disjE)
+  apply (erule notE)
+  apply assumption+
+  done
+
+(* 1 mark *)
+lemma
+  "(\<exists>x. P x \<and> Q x) \<longrightarrow> (\<exists>x. P x) \<and> (\<exists>x. Q x)"
+  apply (rule impI)
+  apply (rule conjI)
+  apply (erule exE)
+  apply (erule conjE)
+  apply (erule exI)
+  apply (erule exE)
+  apply (erule conjE)
+  apply (erule exI)
+  done
+
+(* 1 mark *)
+lemma
+  "(\<not> (\<exists>x. \<not>P x) \<or> R) \<longrightarrow> ((\<exists>x. \<not> P x) \<longrightarrow> R)"
+  apply (rule impI)+
+  apply (erule disjE)
+  apply (erule notE)
+  apply assumption+
+  done
+
+(* 2 marks *)
+lemma
+  "(\<forall>x. P x) \<longrightarrow> \<not> (\<exists>x. \<not> P x)"
+  apply (rule impI)
+  apply (rule notI)
+  apply (rule exE)
+  apply assumption
+  apply (erule allE)
+  apply (erule notE)
+  apply assumption
+  done
+
+(* 3 marks *)
+text \<open>Prove using ccontr\<close>
+lemma excluded_middle:
+  "P \<or> \<not> P"
+  apply (rule ccontr)
+  apply (rule conjE)
+  apply (rule conjI)
+  apply (rule notI)
+  apply (erule notE)
+  apply (rule disjI1)
+  apply assumption
+  apply (rule ccontr)
+  apply (erule notE)
+  apply (rule disjI2)
+  apply assumption
+  apply (erule notE)
+  apply (rule disjI1)
+  apply assumption
+  done
+
+(* 3 marks *)
+text \<open>Prove using excluded middle\<close>
+lemma notnotD:
+  "\<not>\<not> P \<Longrightarrow> P"
+  apply (rule disjE)
+  apply (rule excluded_middle)
+  apply assumption
+  apply (erule notE)
+  apply assumption
+  done
+
+(* 3 marks *)
+text \<open>Prove using double-negation (rule notnotD)\<close>
+lemma classical:
+  "(\<not> P \<Longrightarrow> P) \<Longrightarrow> P"
+  apply (rule notnotD)
+  apply (rule notI)
+  apply (drule impI)+
+  apply (erule impE)
+  apply assumption
+  apply (erule notE)
+  apply assumption
+  done
+
+(* 3 marks *)
+text \<open>Prove using classical\<close>
+lemma ccontr:
+  "(\<not> P \<Longrightarrow> False) \<Longrightarrow> P"
+  apply (drule notI)
+  apply (rule classical)
+  apply (erule notE)
+  apply assumption
+  done
+
+(* 3 marks *)
+lemma
+  "(\<not> (\<forall>x. P x \<or> R x)) = (\<exists>x. \<not> P x \<and> \<not> R x)"
+  apply (rule iffI)
+  apply (rule classical)
+  apply (erule notE)
+  apply (rule allI)
+  apply (rule classical)
+  apply (erule notE)
+  apply (rule exI)
+  apply (rule conjI)
+
+  apply (rule notI, erule notE)
+  apply (rule disjI1)
+  apply assumption
+  apply (rule notI, erule notE)
+  apply (rule disjI2)
+  apply assumption
+
+  apply (erule exE)
+  apply (rule notI)
+  apply (erule allE)
+  apply (erule disjE)
+  apply (erule conjE)
+  apply (erule notE)
+  apply assumption
+  apply (rule classical)
+  apply (erule conjE)
+  apply (erule notE)+
+  apply assumption
+  done
+ 
+
+(* 3 marks *)
+lemma
+  "(\<exists>x. P x \<or> R x) = (\<not>((\<forall>x. \<not> P x) \<and> \<not> (\<exists>x. R x)))"
+  apply (rule iffI)
+  apply (rule notI)
+  apply (erule conjE)
+  apply (erule notE)
+  apply (erule exE)
+  apply (erule allE)
+  apply (erule disjE)
+  apply (erule notE)
+  apply assumption
+  apply (rule classical)
+  apply (erule notE)+
+  apply (erule exI)
+
+  apply (rule classical)
+  apply (erule notE)
+  apply (rule conjI)
+  apply (rule allI)
+  apply (rule classical)
+  apply (erule notE)
+  apply (rule exI)
+  apply (rule disjI1)
+  apply (rule classical)
+  apply (erule notE)
+  apply assumption
+  apply (rule notI)
+  apply (erule notE)
+  apply (erule exE)
+  apply (rule exI)
+  apply (rule disjI2)
+  apply assumption
+  done
+
+section \<open>Part 2.1\<close>
+
+locale partof =
+  fixes partof :: "'region \<Rightarrow> 'region \<Rightarrow> bool" (infix "\<sqsubseteq>" 100)
+begin
+
+(* 1 mark *)
+definition properpartof :: "'region \<Rightarrow> 'region \<Rightarrow> bool" (infix "\<sqsubset>" 100) where
+  "x \<sqsubset> y \<equiv> x \<sqsubseteq> y \<and> x \<noteq> y"
+
+(* 1 mark *)
+definition overlaps :: "'region \<Rightarrow> 'region \<Rightarrow> bool" (infix "\<frown>" 100) where
+  "x \<frown> y \<equiv> \<exists>z. z \<sqsubseteq> x \<and> z \<sqsubseteq> y"
+
+definition disjoint :: "'region \<Rightarrow> 'region \<Rightarrow> bool" (infix "\<asymp>" 100) where
+  "x \<asymp> y \<equiv> \<not> x \<frown> y"
+
+(* 1 mark *)
+definition partialoverlap :: "'region \<Rightarrow> 'region \<Rightarrow> bool" (infix "~\<frown>" 100) where
+  "x ~\<frown> y \<equiv> x \<frown> y \<and> \<not> x \<sqsubseteq> y \<and> \<not> y \<sqsubseteq>  x"
+
+(* 1 mark *)
+definition sumregions :: "'region set \<Rightarrow> 'region \<Rightarrow> bool" ("\<Squnion> _ _" [100, 100] 100) where
+  "\<Squnion> \<alpha> x \<equiv> (\<forall>y \<in> \<alpha>. y \<sqsubseteq> x) \<and> (\<forall>y. y \<sqsubseteq> x \<longrightarrow> (\<exists>z \<in> \<alpha>. y \<frown> z))"
+
+end
+
+(* 1+1+1=3 marks *)
+locale mereology = partof +
+  assumes A1: "\<forall>xyz. x \<sqsubseteq> y \<and> y \<sqsubseteq> z \<longrightarrow> x \<sqsubseteq> z"
+      and A2: "\<forall>\<alpha>. \<alpha> \<noteq> {} \<longrightarrow> (\<exists>x.\<Squnion> \<alpha> x)"
+      and A2': "\<forall>\<alpha>xy. \<Squnion> \<alpha> x \<and> \<Squnion> \<alpha> y \<longrightarrow> x = y"
+begin
+
+section \<open>Part 2.2\<close>
+
+(* 2 marks *)
+theorem overlaps_sym:
+  "(x \<frown> y) = (y \<frown> x)"
+apply (unfold overlaps_def)
+apply (rule iffI)
+apply (erule exE)
+apply (erule conjE)
+apply (rule exI)
+apply (rule conjI)
+apply assumption+
+
+apply (erule exE)
+apply (erule conjE)
+apply (rule exI)
+apply (rule conjI)
+apply assumption+ 
+done
+
+(* 1 mark *)
+theorem in_sum_set_partof:
+  "y \<in> \<alpha> \<and> \<Squnion> \<alpha> x \<longrightarrow> y \<sqsubseteq> x"
+proof -
+  show "y \<in> \<alpha> \<and> \<Squnion> \<alpha> x \<longrightarrow> y \<sqsubseteq> x" using sumregions_def by simp
+qed
+
+(* 3 marks *)
+theorem overlaps_refl:
+  "x \<frown> x"
+proof -
+  have "\<exists>y. \<Squnion> {x} y" using A2 by blast
+  show "x \<frown> x"
+    using \<open>\<exists>y. \<Squnion> {x} y\<close> sumregions_def by auto
+qed
+
+(* 1 mark *)
+theorem all_has_partof:
+  "\<forall>x.\<exists>y. y \<sqsubseteq> x"
+proof -
+  show "\<forall>x.\<exists>y. y \<sqsubseteq> x" using overlaps_def overlaps_refl by auto
+qed
+
+(* 2 marks *)
+theorem partof_overlaps:
+  assumes "x \<sqsubseteq> y"
+  shows "x \<frown> y"
+proof -
+  have "\<exists>z. z \<sqsubseteq> x" using all_has_partof by simp
+  hence "\<exists>z. z \<sqsubseteq> y" using A1
+    using assms by blast 
+  thus "x \<frown> y" using overlaps_def
+    using A1 \<open>\<exists>z. z \<sqsubseteq> x\<close> assms by blast 
+qed
+
+(* 1 mark *)
+theorem sum_parts_eq:
+  "\<Squnion> {y. y \<sqsubseteq> x} x"
+proof -
+  show "\<Squnion> {y. y \<sqsubseteq> x} x"
+    using overlaps_refl sumregions_def by auto
+qed
+
+(* 2 marks *)
+theorem sum_relation_is_same':
+  assumes "\<And>c. r y c \<Longrightarrow> c \<sqsubseteq> y"
+      and "\<And>f. y \<frown> f \<Longrightarrow> \<exists>g. r y g \<and> g \<frown> f"
+      and "\<Squnion> {y} x"
+    shows "\<Squnion> {k. r y k} x"
+proof - 
+  have a: "\<Squnion> {k. k \<sqsubseteq> y} y" using sum_parts_eq by simp
+  hence b: "y \<sqsubseteq> x" using assms(3) in_sum_set_partof by auto
+  hence e: "\<forall>k \<in> {k. r y k}. k \<sqsubseteq> x" using A1 assms(1) by blast
+  have f: "\<forall>u. u \<sqsubseteq> x \<longrightarrow> (\<exists>k \<in> {k. r y k}. k \<frown> u)"
+    using assms(2) assms(3) overlaps_sym sumregions_def by auto
+  show "\<Squnion> {k. r y k} x"
+    using e f overlaps_sym sumregions_def by auto
+qed
+
+(* 1 mark *)
+theorem overlap_has_partof_overlap:
+  assumes "e \<frown> f"
+  shows "\<exists>x. x \<sqsubseteq> e \<and> x \<frown> f"
+proof -
+  show "\<exists>x. x \<sqsubseteq> e \<and> x \<frown> f"
+    using assms overlaps_def partof_overlaps by auto
+qed
+
+(* 1 marks *)
+theorem sum_parts_of_one_eq:
+  assumes "\<Squnion> {y} x"
+  shows "\<Squnion> {z. z \<sqsubseteq> y} x"
+proof -
+  note sum_relation_is_same' [where r = "\<lambda>y c. c \<sqsubseteq> y"]
+  thus "\<Squnion> {z. z \<sqsubseteq> y} x" using assms overlap_has_partof_overlap by simp
+qed
+
+(* 5 marks *)
+theorem both_partof_eq:
+  assumes "y \<sqsubseteq> x \<and> x \<sqsubseteq> y"
+  shows "x = y"
+proof -
+  have a: "\<Squnion> {z. z \<sqsubseteq> x} y"
+  proof (rule ccontr)
+    assume b:  "\<not> (\<Squnion> {z. z \<sqsubseteq> x} y)"
+    then have c: "(\<exists>u \<in> {z. z \<sqsubseteq> x}. \<not>(u \<sqsubseteq> y) \<or> (\<exists>u. u \<sqsubseteq> y \<and> (\<forall>v \<in> {z. z \<sqsubseteq> x}. \<not>(v \<frown> u))))"
+      unfolding sumregions_def using assms partof_overlaps by auto
+    hence "((\<exists>z. z \<sqsubseteq> x \<and> \<not>(z \<sqsubseteq> y)) \<or> (\<exists>w. w \<sqsubseteq> y \<and> (\<forall>z. z \<sqsubseteq> x \<and> \<not>(z \<frown> w))))" 
+      using assms overlaps_sym partof_overlaps by auto
+    thus False 
+    proof
+      assume d: "\<exists>z. z \<sqsubseteq> x \<and> \<not>(z \<sqsubseteq> y)"
+      have e: "\<exists>z. z \<sqsubseteq> y" using assms by auto 
+      thus False using A1 assms d by blast
+    next
+      assume e: "(\<exists>w. w \<sqsubseteq> y \<and> (\<forall>z. z \<sqsubseteq> x \<and> \<not>(z \<frown> w)))"
+      hence "\<exists>w. \<not>(w \<frown> y)" using overlaps_refl by auto
+      thus False using e overlaps_refl by auto
+    qed
+  qed
+  show "x = y" using A2' a sum_parts_eq by auto
+qed
+
+(* 4 marks *)
+theorem sum_all_with_parts_overlapping:
+  assumes "\<Squnion> {v. \<forall>u. u \<sqsubseteq> v \<longrightarrow> u \<frown> y} x"
+  shows "\<Squnion> {y} x"
+proof (rule ccontr)
+  assume "\<not> \<Squnion> {y} x" 
+  hence "(\<not>(y \<sqsubseteq> x)) \<or> (\<exists>w. w \<sqsubseteq> x \<and> \<not>(w \<frown> y))" using sumregions_def by auto 
+  thus False
+  proof
+    assume "\<not>(y \<sqsubseteq> x)"
+    then have "y \<in> {v. \<forall>u. u \<sqsubseteq> v \<longrightarrow> u \<frown> y}" using partof_overlaps by simp
+    thus False using \<open>\<not> y \<sqsubseteq> x\<close> assms sumregions_def by auto
+  next
+    assume a: "\<exists>w. w \<sqsubseteq> x \<and> \<not>(w \<frown> y)"
+    obtain w where b: "w \<sqsubseteq> x \<and> \<not> w \<frown> y" using a by auto
+    from assms have c: "\<forall>q. q \<sqsubseteq> x \<longrightarrow> (\<exists>z \<in> {v. \<forall>u. u \<sqsubseteq> v \<longrightarrow> u \<frown> y}. z \<frown> q)"
+      using overlaps_sym sumregions_def by auto
+    have d: "\<exists>z. w \<frown> z" using b partof_overlaps by auto
+    then obtain z where e: "w \<frown> z \<and> (\<forall>p. p \<sqsubseteq> z \<longrightarrow> p \<frown> y)" using assms b sumregions_def by auto
+    hence f: "w \<frown> z \<longrightarrow> (\<exists>wz. wz \<sqsubseteq> w \<and> wz \<sqsubseteq> z)" using overlaps_def by simp
+    then obtain wz where g: "wz \<sqsubseteq> w \<and> wz \<sqsubseteq> z" using e by blast 
+    have h: "\<exists>z.\<forall>p. p \<sqsubseteq> z \<longrightarrow> p \<frown> y" using partof_overlaps by auto
+    have j: "wz \<sqsubseteq> z \<longrightarrow> wz \<frown> y" using e by simp
+    hence k: "wz \<frown> y \<longrightarrow> (\<exists>wzy. wzy \<sqsubseteq> wz \<and> wzy \<sqsubseteq> y) \<longrightarrow> w \<frown> y" using A1 g overlaps_def by blast
+    hence l: "w \<frown> y" using g j overlaps_def by auto
+    thus False using b by simp
+  qed
+qed
+
+(* 2 marks *)
+theorem sum_one_is_self:
+  "\<Squnion> {x} x"
+proof -
+  have a: "\<exists>y. \<Squnion> {x} y" using A2 by simp
+  then obtain y where b:"\<Squnion> {x} y" by blast
+  then show "\<Squnion> {x} x" using A2' sum_parts_eq sum_parts_of_one_eq by blast
+qed
+
+(* 2 marks *)
+theorem sum_all_with_parts_overlapping_self:
+  "\<Squnion> {z. \<forall>y. y \<sqsubseteq> z \<longrightarrow> y \<frown> x} x"
+proof -
+  have a: "{z. \<forall>y. y \<sqsubseteq> z \<longrightarrow> y \<frown> x} \<noteq> {}" using partof_overlaps by force
+  then have b: "\<exists>k. \<Squnion> {z. \<forall>y. y \<sqsubseteq> z \<longrightarrow> y \<frown> x} k" using A2 by simp
+  then obtain k where "\<Squnion> {z. \<forall>y. y \<sqsubseteq> z \<longrightarrow> y \<frown> x} k" by auto
+  show "\<Squnion> {z. \<forall>y. y \<sqsubseteq> z \<longrightarrow> y \<frown> x} x"
+    using A2' \<open>\<Squnion> {z. \<forall>y. y \<sqsubseteq> z \<longrightarrow> y \<frown> x} k\<close> sum_all_with_parts_overlapping sum_one_is_self by blast
+qed
+
+
+(* 4 marks *)
+theorem proper_have_nonoverlapping_proper:
+  assumes "s \<sqsubset> r"
+  shows "x \<sqsubset> r \<and> \<not> x \<frown> s"
+oops
+
+(* 1 mark *)
+sublocale parthood_partial_order: order "(\<sqsubseteq>)" "(\<sqsubset>)"
+proof
+  show "\<And>x y. x \<sqsubset> y = (x \<sqsubseteq> y \<and> \<not> y \<sqsubseteq> x)"
+    using both_partof_eq properpartof_def by auto
+next
+  show "\<And>x. x \<sqsubseteq> x"
+    using in_sum_set_partof sum_one_is_self by auto
+next
+  show "\<And>x y z. \<lbrakk>x \<sqsubseteq> y; y \<sqsubseteq> z\<rbrakk> \<Longrightarrow> x \<sqsubseteq> z"
+    using A1 by blast
+next
+  show "\<And>x y. \<lbrakk>x \<sqsubseteq> y; y \<sqsubseteq> x\<rbrakk> \<Longrightarrow> x = y"
+    using both_partof_eq by simp
+qed
+
+end
+
+section \<open>Part 2.3\<close>
+
+locale sphere =
+  fixes sphere :: "'a \<Rightarrow> bool"
+begin
+
+abbreviation AllSpheres :: "('a \<Rightarrow> bool) \<Rightarrow> bool" (binder "\<forall>\<degree>" 10) where
+  "\<forall>\<degree>x. P x \<equiv> \<forall>x. sphere x \<longrightarrow> P x"
+
+abbreviation ExSpheres :: "('a \<Rightarrow> bool) \<Rightarrow> bool" (binder "\<exists>\<degree>" 10) where
+  "\<exists>\<degree>x. P x \<equiv> \<exists>x. sphere x \<and> P x"
+
+end
+
+locale mereology_sphere = mereology partof + sphere sphere
+  for partof :: "'region \<Rightarrow> 'region \<Rightarrow> bool" (infix "\<sqsubseteq>" 100)
+  and sphere :: "'region \<Rightarrow> bool"
+begin
+
+definition exttan :: "'region \<Rightarrow> 'region \<Rightarrow> bool" where
+  "exttan a b \<equiv> sphere a \<and> sphere b \<and> a \<asymp> b \<and> (\<forall>\<degree>x y. a \<sqsubseteq> x \<and> a \<sqsubseteq> y \<and> b \<asymp> x \<and> b \<asymp> y
+                                                        \<longrightarrow> x \<sqsubseteq> y \<or> y \<sqsubseteq> x)"
+
+definition inttan :: "'region \<Rightarrow> 'region \<Rightarrow> bool" where
+  "inttan a b \<equiv> sphere a \<and> sphere b \<and> a \<asymp> b \<and> (\<forall>\<degree>x y. a \<sqsubseteq> x \<and> a \<sqsubseteq> y \<and> x \<sqsubseteq> b \<and> y \<sqsubseteq> b
+                                                        \<longrightarrow> x \<sqsubseteq> y \<or> y \<sqsubseteq> x)"
+
+definition extdiam :: "'region \<Rightarrow> 'region \<Rightarrow> 'region \<Rightarrow> bool" where
+  "extdiam a b c \<equiv> exttan a c \<and> exttan b c
+                 \<and> (\<forall>\<degree>x y. x \<asymp> c \<and> y \<asymp> c \<and> a \<sqsubseteq> x \<and> b \<sqsubseteq> y \<longrightarrow> x \<asymp> y)"
+
+definition intdiam :: "'region \<Rightarrow> 'region \<Rightarrow> 'region \<Rightarrow> bool" where
+  "intdiam a b c \<equiv> inttan a c \<and> inttan b c
+                 \<and> (\<forall>\<degree>x y. x \<asymp> c \<and> y \<asymp> c \<and> exttan a x \<and> exttan b y \<longrightarrow> x \<asymp> y)"
+
+abbreviation properconcentric :: "'region \<Rightarrow> 'region \<Rightarrow> bool" where
+  "properconcentric a b \<equiv> a \<sqsubset> b
+                        \<and> (\<forall>\<degree>x y. extdiam x y a \<and> inttan x b \<and> inttan y b \<longrightarrow> intdiam x y b)"
+
+definition concentric :: "'region \<Rightarrow> 'region \<Rightarrow> bool" (infix "\<odot>" 100) where
+  "a \<odot> b \<equiv> sphere a \<and> sphere b \<and> (a = b \<or> properconcentric a b \<or> properconcentric b a)"
+
+definition onboundary :: "'region \<Rightarrow> 'region \<Rightarrow> bool" where
+  "onboundary s r \<equiv> sphere s \<and> (\<forall>s'. s' \<odot> s \<longrightarrow> s' \<frown> r \<and> \<not> s' \<sqsubseteq> r)"
+
+definition equidistant3 :: "'region \<Rightarrow> 'region \<Rightarrow> 'region \<Rightarrow> bool" where
+  "equidistant3 x y z \<equiv> \<exists>\<degree>z'. z' \<odot> z \<and> onboundary y z' \<and> onboundary x z'"
+
+definition betw :: "'region \<Rightarrow> 'region \<Rightarrow> 'region \<Rightarrow> bool" ("[_ _ _]" [100, 100, 100] 100) where
+  "[x y z] \<equiv> sphere x \<and> sphere z
+             \<and> (x \<odot> y \<or> y \<odot> z
+                \<or> (\<exists>x' y' z' v w. x' \<odot> x \<and> y' \<odot> y \<and> z' \<odot> z
+                                  \<and> extdiam x' y' v \<and> extdiam v w y' \<and> extdiam y' z' w))"
+
+definition mid :: "'region \<Rightarrow> 'region \<Rightarrow> 'region \<Rightarrow> bool" where
+  "mid x y z \<equiv> [x y z] \<and> (\<exists>\<degree>y'. y' \<odot> y \<and> onboundary x y' \<and> onboundary z y')"
+
+definition equidistant4 :: "'region \<Rightarrow> 'region \<Rightarrow> 'region \<Rightarrow> 'region \<Rightarrow> bool" ("_ _ \<doteq> _ _" [100, 100, 100, 100] 100) where
+  "x y \<doteq> z w \<equiv> \<exists>\<degree>u v. mid w u y \<and> mid x u v \<and> equidistant3 v z y"
+
+definition oninterior :: "'region \<Rightarrow> 'region \<Rightarrow> bool" where
+  "oninterior s r \<equiv> \<exists>s'. s' \<odot> s \<and> s' \<sqsubseteq> r"
+
+definition nearer :: "'region \<Rightarrow> 'region \<Rightarrow> 'region \<Rightarrow> 'region \<Rightarrow> bool" where
+  "nearer w x y z \<equiv> \<exists>\<degree>x'. [w x x'] \<and> \<not> x \<odot> x' \<and> w x' \<doteq> y z"
+
+end
+
+locale partial_region_geometry = mereology_sphere partof sphere
+  for partof :: "'region \<Rightarrow> 'region \<Rightarrow> bool" (infix "\<sqsubseteq>" 100)
+  and sphere :: "'region \<Rightarrow> bool" +
+  assumes A4: "\<lbrakk>x \<odot> y; y \<odot> z\<rbrakk> \<Longrightarrow> x \<odot> z"
+      and A5: "\<lbrakk>x y \<doteq> z w; x' \<odot> x\<rbrakk> \<Longrightarrow> x' y \<doteq> z w"
+      and A6: "\<lbrakk>sphere x; sphere y; \<not> x \<odot> y\<rbrakk>
+               \<Longrightarrow> \<exists>\<degree>s. \<forall>\<degree>z. oninterior z s = nearer x z x y"
+      and A7: "sphere x \<Longrightarrow> \<exists>\<degree>y. \<not> x \<odot> y \<and> (\<forall>\<degree>z. oninterior z x = nearer x z x y)"
+      and A8: "x \<sqsubseteq> y = (\<forall>s. oninterior s x \<longrightarrow> oninterior s y)"
+      and A9: "\<exists>\<degree>s. s \<sqsubseteq> r"
+begin
+
+(* 2 marks *)
+thm equiv_def
+theorem conc_equiv:
+  "equiv {a} b"
+proof -
+  have "a \<odot> b"
+oops
+
+(* 6 marks *)
+theorem region_is_spherical_sum:
+  "undefined"
+oops
+
+(* 1 mark *)
+theorem region_spherical_interior:
+  "undefined"
+oops
+
+(* 2 marks *)
+theorem equal_interiors_equal_regions:
+  assumes "undefined"
+  shows "undefined"
+oops
+
+(* 2 marks *)
+theorem proper_have_nonoverlapping_proper_sphere:
+  assumes "undefined"
+  shows "undefined"
+oops
+
+(* 4 marks *)
+theorem not_sphere_spherical_parts_gt1:
+  assumes "undefined"
+      and "undefined"
+  shows "undefined"
+oops
+
+end
+
+section \<open>Part 3\<close>
+
+context mereology_sphere
+begin
+
+(* 3 marks *)
+lemma
+  assumes T4: "\<And>x y. \<lbrakk>sphere x; sphere y\<rbrakk> \<Longrightarrow> x y \<doteq> y x"
+      and A9: "\<exists>\<degree>s. s \<sqsubseteq> r"
+  shows False
+oops
+
+(* 3 marks *)
+definition equidistant3' :: "'region \<Rightarrow> 'region \<Rightarrow> 'region \<Rightarrow> bool" where
+  "equidistant3' x y z \<equiv> undefined"
+
+no_notation equidistant4 ("_ _ \<doteq> _ _" [100, 100, 100, 100] 100)
+
+definition equidistant4' :: "'region \<Rightarrow> 'region \<Rightarrow> 'region \<Rightarrow> 'region \<Rightarrow> bool" ("_ _ \<doteq> _ _" [100, 100, 100, 100] 100) where
+  "x y \<doteq> z w \<equiv> \<exists>\<degree>u v. mid w u y \<and> mid x u v \<and> equidistant3' v z y"
+
+end
+
+datatype two_reg = Left | Right | Both
+
+(* 2 marks *)
+definition tworeg_partof :: "two_reg \<Rightarrow> two_reg \<Rightarrow> bool" (infix "\<sqsubseteq>" 100) where
+  "x \<sqsubseteq> y \<equiv> undefined"
+
+(* 12 marks *)
+interpretation mereology "(\<sqsubseteq>)"
+oops
+
+
+end
